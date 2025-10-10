@@ -1,0 +1,22 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "Android Browser Custom Tab Plugin",
+	"Description": "Android Browser Custom Tab Plugin for Android",
+	"Category": "Android",
+	"CreatedBy": "Punal Manalan",
+	"CreatedByURL": "https://github.com/punal100/P_AndroidBrowserCustomTab",
+	"DocsURL": "https://github.com/punal100/P_AndroidBrowserCustomTab",
+	"MarketplaceURL": "",
+	"SupportURL": "https://github.com/punal100/P_AndroidBrowserCustomTab",
+	"CanContainContent": true,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "P_AndroidBrowserCustomTab",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
