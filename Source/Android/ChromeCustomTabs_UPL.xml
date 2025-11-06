@@ -4,140 +4,142 @@
 Plugin UPL for Chrome Custom Tabs - P_AndroidBrowserCustomTab Plugin
 -->
 <init>
-<log text="ChromeCustomTabs Plugin UPL init"/>
+    <log text="ChromeCustomTabs Plugin UPL init"/>
 </init>
 
-<!--
-Set required Gradle properties for AndroidX and Jetifier
--->
+<!-- Set required Gradle properties for AndroidX and Jetifier -->
 <gradleProperties>
-<insert>
+    <insert><![CDATA[
 android.useAndroidX=true
 android.enableJetifier=true
-</insert>
+    ]]></insert>
 </gradleProperties>
 
-<!--
-Add the AndroidX Browser library dependency for Custom Tabs
--->
+<!-- Add the AndroidX Browser library dependency for Custom Tabs -->
 <gradleDependencies>
-<insert>
+    <insert><![CDATA[
 implementation 'androidx.browser:browser:1.7.0'
-</insert>
+    ]]></insert>
 </gradleDependencies>
 
-<!--
-Copy Java files to intermediate src directory (will be copied to Gradle staging later)
--->
+<!-- ADD ONLY: R8/ProGuard keep rules to preserve your existing Java API in Shipping -->
+<proguardAdditions>
+    <insert><![CDATA[
+-keep class androidx.browser.** { *; }
+-keep class com.epicgames.unreal.customtabs.** { *; }
+-keepclasseswithmembers class com.epicgames.unreal.customtabs.** { native <methods>; }
+# Keep the exact GameActivity bridge signatures you expose
+-keepclassmembers class com.epicgames.unreal.GameActivity {
+    public boolean isChromeCustomTabsAvailable();
+    public void openChromeCustomTab(java.lang.String,int,boolean,int,boolean,boolean,boolean);
+    public void closeChromeCustomTab();
+}
+    ]]></insert>
+</proguardAdditions>
+
+<!-- Copy Java files to intermediate src directory (will be copied to Gradle staging later) -->
 <resourceCopies>
-<copyFile src="$S(PluginDir)/Java/src/com/epicgames/unreal/customtabs/ChromeCustomTabs.java" dst="$S(BuildDir)/src/com/epicgames/unreal/customtabs/ChromeCustomTabs.java" />
+    <copyFile src="$S(PluginDir)/Java/src/com/epicgames/unreal/customtabs/ChromeCustomTabs.java" dst="$S(BuildDir)/src/com/epicgames/unreal/customtabs/ChromeCustomTabs.java" />
 </resourceCopies>
 
-<!-- 
-Add required imports to the main GameActivity
--->
+<!-- Add required imports to the main GameActivity -->
 <gameActivityImportAdditions>
-<insert>
+    <insert><![CDATA[
 import com.epicgames.unreal.customtabs.ChromeCustomTabs;
-</insert>
+    ]]></insert>
 </gameActivityImportAdditions>
 
-<!-- 
-Initialize our Java class in GameActivity's onCreate
--->
+<!-- Initialize our Java class in GameActivity's onCreate -->
 <gameActivityOnCreateAdditions>
-<insert>
+    <insert><![CDATA[
 ChromeCustomTabs.setActivity(this);
 
 // Handle Deep Links when app starts from background or first launch
 Intent launchIntent = getIntent();
-if (launchIntent != null &amp;&amp; ChromeCustomTabs.handleDeepLink(launchIntent)) {
-android.util.Log.i("UEGameActivity", "Deep Link handled in onCreate");
+if (launchIntent != null && ChromeCustomTabs.handleDeepLink(launchIntent)) {
+    android.util.Log.i("UEGameActivity", "Deep Link handled in onCreate");
 }
-</insert>
+    ]]></insert>
 </gameActivityOnCreateAdditions>
 
-<!-- 
-Clean up in GameActivity's onDestroy
--->
+<!-- Clean up in GameActivity's onDestroy -->
 <gameActivityOnDestroyAdditions>
-<insert>
+    <insert><![CDATA[
 ChromeCustomTabs.onActivityDestroyed();
-</insert>
+    ]]></insert>
 </gameActivityOnDestroyAdditions>
 
-<!-- 
-Add the public native functions that will be called from C++
--->
+<!-- Add the public native functions that will be called from C++ -->
 <gameActivityClassAdditions>
-<insert>
+    <insert><![CDATA[
 public boolean isChromeCustomTabsAvailable() {
-return ChromeCustomTabs.isAvailable(this);
+    return ChromeCustomTabs.isAvailable(this);
 }
 
 public void openChromeCustomTab(String url, int toolbarColor, boolean hasNavBarColor, int navBarColor, boolean showTitle, boolean urlBarHiding, boolean defaultShare) {
-ChromeCustomTabs.open(this, url, toolbarColor, hasNavBarColor, navBarColor, showTitle, urlBarHiding, defaultShare, null);
+    ChromeCustomTabs.open(this, url, toolbarColor, hasNavBarColor, navBarColor, showTitle, urlBarHiding, defaultShare, null);
 }
 
 public void closeChromeCustomTab() {
-ChromeCustomTabs.close(this);
+    ChromeCustomTabs.close(this);
 }
-</insert>
+    ]]></insert>
 </gameActivityClassAdditions>
 
-<!--
-Add Deep Link intent filter to AndroidManifest for web-to-app communication
-Web pages can use: <a href="uewebtest://message?text=hello&data=world">Send to App</a>
--->
+<!-- Add Deep Link intent filter to AndroidManifest for web-to-app communication -->
 <androidManifestUpdates>
-<!-- Make GameActivity singleTask so Deep Links trigger onNewIntent() -->
-<setElement result="android:launchMode" value="singleTask" tag="activity" name="com.epicgames.unreal.GameActivity"/>
+    <!-- Make GameActivity singleTask so Deep Links trigger onNewIntent() -->
+    <setElement result="android:launchMode" value="singleTask" tag="activity" name="com.epicgames.unreal.GameActivity"/>
 
-<!-- Loop through activities to find GameActivity and add intent-filter ONLY there -->
-<loopElements tag="activity">
-<setStringFromAttribute result="activityName" tag="$" name="android:name"/>
-<setBoolIsEqual result="isGameActivity" arg1="$S(activityName)" arg2="com.epicgames.unreal.GameActivity"/>
-<if condition="isGameActivity">
-<true>
-<!-- Add Deep Link intent-filter ONLY to GameActivity -->
-<addElements tag="$">
-<intent-filter android:autoVerify="true">
-<action android:name="android.intent.action.VIEW" />
-<category android:name="android.intent.category.DEFAULT" />
-<category android:name="android.intent.category.BROWSABLE" />
-<data android:scheme="uewebtest" />
-</intent-filter>
-</addElements>
-</true>
-</if>
-</loopElements>
+    <!-- Loop through activities to find GameActivity and add intent-filter ONLY there -->
+    <loopElements tag="activity">
+        <setStringFromAttribute result="activityName" tag="$" name="android:name"/>
+        <setBoolIsEqual result="isGameActivity" arg1="$S(activityName)" arg2="com.epicgames.unreal.GameActivity"/>
+        <if condition="isGameActivity">
+            <true>
+                <!-- Add Deep Link intent-filter ONLY to GameActivity -->
+                <addElements tag="$">
+                    <intent-filter android:autoVerify="true">
+                        <action android:name="android.intent.action.VIEW" />
+                        <category android:name="android.intent.category.DEFAULT" />
+                        <category android:name="android.intent.category.BROWSABLE" />
+                        <data android:scheme="uewebtest" />
+                    </intent-filter>
+                </addElements>
+            </true>
+        </if>
+    </loopElements>
+
+    <!-- ADD ONLY: Android 11+ package visibility so Custom Tabs provider can be discovered -->
+    <addElements tag="manifest">
+        <queries>
+            <intent>
+                <action android:name="androidx.browser.customtabs.action.CustomTabsService" />
+            </intent>
+        </queries>
+    </addElements>
 </androidManifestUpdates>
 
-<!--
-Handle Deep Link intents in GameActivity's onNewIntent (when activity is already running)
--->
+<!-- Handle Deep Link intents in GameActivity's onNewIntent (keep original pattern) -->
 <gameActivityOnNewIntentAdditions>
-<insert>
-// Handle Deep Links from Custom Tab
-// Note: newIntent parameter is already set via setIntent(newIntent) above by Unreal
-Intent currentIntent = getIntent();
-if (currentIntent != null &amp;&amp; ChromeCustomTabs.handleDeepLink(currentIntent)) {
-android.util.Log.i("UEGameActivity", "Deep Link handled in onNewIntent");
-}
-</insert>
+    <insert><![CDATA[
+ // Note: using getIntent() here preserves your original behavior
+ Intent currentIntent = getIntent();
+ if (currentIntent != null && ChromeCustomTabs.handleDeepLink(currentIntent)) {
+     android.util.Log.i("UEGameActivity", "Deep Link handled in onNewIntent");
+ }
+    ]]></insert>
 </gameActivityOnNewIntentAdditions>
 
-<!--
-Handle Deep Link intents in GameActivity's onStart (when activity becomes visible)
--->
+<!-- Handle Deep Link intents in GameActivity's onStart (when activity becomes visible) -->
 <gameActivityOnStartAdditions>
-<insert>
-// Handle Deep Links when activity starts (after being in background)
-Intent startIntent = getIntent();
-if (startIntent != null &amp;&amp; ChromeCustomTabs.handleDeepLink(startIntent)) {
-android.util.Log.i("UEGameActivity", "Deep Link handled in onStart");
-}
-</insert>
+    <insert><![CDATA[
+ // Handle Deep Links when activity starts (after being in background)
+ Intent startIntent = getIntent();
+ if (startIntent != null && ChromeCustomTabs.handleDeepLink(startIntent)) {
+     android.util.Log.i("UEGameActivity", "Deep Link handled in onStart");
+ }
+    ]]></insert>
 </gameActivityOnStartAdditions>
 
 </root>
